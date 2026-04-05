@@ -2,10 +2,13 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl python3 python3-pip && rm -rf /var/lib/apt/lists/*
+
+# Uninstall any cached ngrok/pyngrok
+RUN pip uninstall -y pyngrok ngrok 2>/dev/null || true
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
 
 COPY app.py .
 COPY mc /app/mc
