@@ -1,9 +1,10 @@
-Root=1-69d2811a-4ac137fa05258d9f71073322Root=1-69d2811a-4ac137fa05258d9f71073322import os
+import os
 import subprocess
 import threading
 from collections import deque
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -13,6 +14,10 @@ JAVA_CMD = ["java", "-Xms512M", "-Xmx1024M", "-jar", MC_JAR, "nogui"]
 
 process = None
 logs = deque(maxlen=200)
+
+
+class CommandRequest(BaseModel):
+    command: str
 
 def stream_logs(proc):
     for line in proc.stdout:
@@ -60,3 +65,12 @@ def stop():
     process.stdin.write("stop\n")
     process.stdin.flush()
     return {"ok": True, "message": "stop sent"}
+
+@app.post("/command")
+def command(req: CommandRequest):
+    if process is None or process.poll() is not None:
+        return JSONResponse({"ok": False, "message": "not running"}, status_code=400)
+
+    process.stdin.write(req.command + "\n")
+    process.stdin.flush()
+    return {"ok": True, "message": f"sent: {req.command}"}
